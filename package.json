@@ -24,7 +24,6 @@
   "dependencies": {
     "@angular-devkit/core": "^22.2.0",
     "@angular-devkit/schematics": "^22.2.0",
-    "@nestjs-modules/mailer": "^2.3.7",
     "@nestjs/bull": "^12.0.0",
     "@nestjs/common": "^12.0.1",
     "@nestjs/config": "^12.0.1",
