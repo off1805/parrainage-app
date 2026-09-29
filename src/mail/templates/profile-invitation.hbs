@@ -1,0 +1,25 @@
+
+<div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto;">
+    <h2>Bonjour {{prenom}},</h2>
+    <p>Bienvenue dans le programme de parrainage !</p>
+    <p>
+        Pour que ton profil soit complet, merci de remplir le formulaire suivant afin
+        d'ajouter ta <strong>photo de profil</strong> et ton <strong>numéro WhatsApp</strong> :
+    </p>
+    {{!-- formUrl est construit par l'API à partir de FRONTEND_URL et d'un token
+         base64url : aucun caractère HTML à échapper, le triple-accolade évite
+         que Handlebars transforme "=" en "&#x3D;" et casse le lien. --}}
+    <p>
+        <a href="{{{formUrl}}}"
+           style="background:#2563eb;color:#fff;padding:12px 24px;text-decoration:none;border-radius:6px;">
+            Compléter mon profil
+        </a>
+    </p>
+    <p style="color:#666;font-size:13px;">
+        Ce lien est personnel, à usage unique, et expire le {{expiresAt}}.
+    </p>
+    <p style="color:#666;font-size:13px;">
+        Si le bouton ne fonctionne pas, copie ce lien dans ton navigateur :
+        <br />{{{formUrl}}}
+    </p>
+</div>

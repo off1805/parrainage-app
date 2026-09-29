@@ -31,6 +31,12 @@
 $ npm install
 ```
 
+## Documentation
+
+La référence de l'API (endpoints, paramètres, réponses, codes d'erreur) est
+dans [`docs/API.md`](docs/API.md). Elle est prévue pour être implémentée par le
+front sans relire le code.
+
 ## Compile and run the project
 
 ```bash
@@ -56,6 +62,20 @@ $ npm run test:e2e
 # test coverage
 $ npm run test:cov
 ```
+
+Les tests e2e démarrent l'application complète (API + base). Ils ont besoin
+d'une base PostgreSQL ; le schéma est créé automatiquement
+(`DATABASE_SYNCHRONIZE=true`) et les tables sont vidées entre chaque test.
+
+Les valeurs par défaut sont définies dans `test/setup-e2e.ts` et peuvent être
+surchargées par l'environnement ou par un `.env` :
+
+```bash
+DATABASE_URL=postgresql://parrainage:parrainage@localhost:5432/parrainage_test npm run test:e2e
+```
+
+Le serveur SMTP est remplacé par un faux transport : aucun serveur de
+messagerie n'est nécessaire, et les emails envoyés sont inspectables.
 
 ## Deployment
 
