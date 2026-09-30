@@ -54,47 +54,69 @@ export class ImportsService {
   private async readRows(file: Express.Multer.File): Promise<RawRow[]> {
     const extension = file.originalname.toLowerCase().split('.').pop();
     if (extension === 'csv') {
-      return this.parseCsv(file.buffer);
+      return this.toObjects(this.parseCsv(file.buffer));
     }
     if (extension === 'xlsx' || extension === 'xls') {
-      return this.parseXlsx(file.buffer);
+      return this.toObjects(await this.parseXlsx(file.buffer));
     }
     throw new BadRequestException(
       'Format non supporté : utiliser un fichier .csv ou .xlsx',
     );
   }
 
-  private parseCsv(buffer: Buffer): RawRow[] {
-    const lines: string[] = [];
-    let current = '';
+  /**
+   * Analyseur CSV en passe unique : découpage des cellules et gestion des
+   * guillemets doivent se faire dans le même automate, sinon un champ cité
+   * contenant une virgule décale toutes les colonnes suivantes.
+   *
+   * Le buffer est décodé en une seule fois : un `toString` par octet
+   * découperait les caractères UTF-8 multi-octets ("é", "è", "ç"...).
+   */
+  private parseCsv(buffer: Buffer): string[][] {
+    const text = buffer.toString('utf-8');
+    const rows: string[][] = [];
+    let row: string[] = [];
+    let cell = '';
     let inQuotes = false;
 
-    for (let i = 0; i < buffer.length; i += 1) {
-      const char = buffer.toString('utf-8', i, i + 1);
-      if (char === '"') {
-        if (inQuotes && buffer.toString('utf-8', i + 1, i + 2) === '"') {
-          current += '"';
+    const pushCell = () => {
+      row.push(cell.trim());
+      cell = '';
+    };
+    const pushRow = () => {
+      pushCell();
+      rows.push(row);
+      row = [];
+    };
+
+    for (let i = 0; i < text.length; i += 1) {
+      const char = text[i]!;
+
+      if (inQuotes) {
+        if (char !== '"') {
+          cell += char;
+        } else if (text[i + 1] === '"') {
+          cell += '"';
           i += 1;
         } else {
-          inQuotes = !inQuotes;
+          inQuotes = false;
         }
         continue;
       }
-      if (!inQuotes && (char === '\n' || char === '\r')) {
-        if (char === '\r' && buffer.toString('utf-8', i + 1, i + 2) === '\n')
-          i += 1;
-        lines.push(current);
-        current = '';
-        continue;
-      }
-      current += char;
-    }
-    if (current.length > 0) lines.push(current);
 
-    return this.toObjects(lines.map(splitCsvLine));
+      if (char === '"') inQuotes = true;
+      else if (char === ',') pushCell();
+      else if (char === '\n' || char === '\r') {
+        if (char === '\r' && text[i + 1] === '\n') i += 1;
+        pushRow();
+      } else cell += char;
+    }
+
+    if (cell !== '' || row.length > 0) pushRow();
+    return rows;
   }
 
-  private async parseXlsx(buffer: Buffer): Promise<RawRow[]> {
+  private async parseXlsx(buffer: Buffer): Promise<string[][]> {
     const workbook = new ExcelJS.Workbook();
     await workbook.xlsx.load(
       buffer as unknown as Parameters<typeof workbook.xlsx.load>[0],
@@ -111,7 +133,7 @@ export class ImportsService {
       matrix.push(values.slice(1).map((cell) => this.toCellText(cell)));
     });
 
-    return this.toObjects(matrix);
+    return matrix;
   }
 
   /** Première ligne = en-têtes, lignes suivantes = données. */
@@ -306,25 +328,4 @@ export class ImportsService {
     const value = Number(raw);
     return Number.isFinite(value) ? value : Number.NaN;
   }
-}
-
-function splitCsvLine(line: string): string[] {
-  const cells: string[] = [];
-  let current = '';
-  let inQuotes = false;
-
-  for (const char of line) {
-    if (char === '"') {
-      inQuotes = !inQuotes;
-      continue;
-    }
-    if (char === ',' && !inQuotes) {
-      cells.push(current.trim());
-      current = '';
-      continue;
-    }
-    current += char;
-  }
-  cells.push(current.trim());
-  return cells;
 }

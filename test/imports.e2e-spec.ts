@@ -187,6 +187,39 @@ describe("Import d'étudiants (e2e)", () => {
     ).toBe(4);
   });
 
+  it('préserve les accents et caractères UTF-8', async () => {
+    const content = [
+      HEADER,
+      line('Chloé', 'Lefèvre', 'chloe.lefevre@school.fr', 'ING3', '', 'M2001'),
+      line('François', 'Dupé', 'francois.dupe@school.fr', 'ING3', '', 'M2002'),
+      line('Zoé', 'Çolak', 'zoe.colak@school.fr', 'ING4', '1', 'M2003'),
+    ].join('\n');
+
+    const { body } = await importFile(ctx.post, csv(content), 'accents.csv');
+    expect(body).toEqual({ imported: 3, rejected: 0, errors: [] });
+
+    const { body: students } = await ctx.get('/students').expect(200);
+    const fullName = (f: string) =>
+      students.find((s: { firstName: string }) => s.firstName === f).lastName;
+
+    expect(fullName('Chloé')).toBe('Lefèvre');
+    expect(fullName('François')).toBe('Dupé');
+    expect(fullName('Zoé')).toBe('Çolak');
+  });
+
+  it('gère les guillemets et virgules dans les noms', async () => {
+    const content = [
+      HEADER,
+      'Jean,"Martin, dit ""Jules""",jean.martin@school.fr,M2001,ING3,',
+    ].join('\n');
+
+    const { body } = await importFile(ctx.post, csv(content), 'guillemets.csv');
+    expect(body).toEqual({ imported: 1, rejected: 0, errors: [] });
+
+    const { body: students } = await ctx.get('/students').expect(200);
+    expect(students[0].lastName).toBe('Martin, dit "Jules"');
+  });
+
   it('normalise les en-têtes (espaces, accents, casse)', async () => {
     const content = [
       'FIRST NAME,Last Name,E-MAIL,Niveau,Capacite Max',
