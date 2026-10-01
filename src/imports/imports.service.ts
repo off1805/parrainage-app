@@ -178,6 +178,20 @@ export class ImportsService {
     ) {
       return value.toString();
     }
+    // Cellules « riches » d'ExcelJS : lien (email devenu cliquable),
+    // texte mis en forme, ou formule (on prend son résultat).
+    if (typeof value === 'object') {
+      const cell = value as {
+        text?: unknown;
+        richText?: { text: string }[];
+        result?: unknown;
+      };
+      if (Array.isArray(cell.richText)) {
+        return cell.richText.map((part) => part.text).join('').trim();
+      }
+      if ('text' in cell) return this.toCellText(cell.text);
+      if ('result' in cell) return this.toCellText(cell.result);
+    }
     return JSON.stringify(value);
   }
 
