@@ -1,6 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import pLimit from 'p-limit';
 import { MailService } from './mail.service.js';
 import {
   BulkSendReport,
@@ -11,7 +10,6 @@ import {
 @Injectable()
 export class StudentMailService {
   private readonly logger = new Logger(StudentMailService.name);
-  private readonly limit = pLimit(3); // 3 envois simultanés max
 
   constructor(
     private readonly mail: MailService,
@@ -71,24 +69,11 @@ export class StudentMailService {
     },
     label: string,
   ): Promise<BulkSendReport> {
-    const results = await Promise.allSettled(
-      recipients.map((r) =>
-        this.limit(() =>
-          this.mail.send({
-            to: r.email,
-            subject: options.subject,
-            template: options.template,
-            context: options.context(r),
-          }),
-        ),
-      ),
-    );
-
-    const failed = results.flatMap((result, i) =>
-      result.status === 'rejected'
-        ? [{ email: recipients[i]!.email, reason: String(result.reason) }]
-        : [],
-    );
+    const failed = await this.mail.sendBulk({
+      subject: options.subject,
+      template: options.template,
+      recipients: recipients.map((r) => ({ to: r.email, context: options.context(r) })),
+    });
 
     const report: BulkSendReport = {
       total: recipients.length,

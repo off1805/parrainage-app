@@ -238,6 +238,35 @@ describe('Invitations de profil (e2e)', () => {
     expect(stored.status).toBe(InvitationStatus.EXPIRED);
   });
 
+  it('invite en un lot tous les profils incomplets', async () => {
+    await seedStudents(ctx.dataSource, [
+      { firstName: 'Bruno', lastName: 'Diallo', level: 'ING4' as never },
+      { firstName: 'Chloé', lastName: 'Eto', level: 'ING3' as never },
+    ]);
+    // Une invitation déjà en attente doit être remplacée
+    await ctx.post(`/students/${studentId}/invitations`).expect(201);
+    ctx.mails.length = 0;
+
+    const { body } = await ctx.post('/invitations/bulk').send({}).expect(201);
+
+    expect(body).toEqual({ total: 3, sent: 3, failed: [] });
+    expect(ctx.mails.map((m) => m.to).sort()).toHaveLength(3);
+    expect(ctx.mails.every((m) => m.html.includes('/invitation?token='))).toBe(true);
+    const pending = await dataSource
+      .getRepository(ProfileInvitation)
+      .countBy({ studentId, status: InvitationStatus.PENDING });
+    expect(pending).toBe(1);
+  });
+
+  it('invite en lot uniquement les étudiants demandés', async () => {
+    const { body } = await ctx
+      .post('/invitations/bulk')
+      .send({ studentIds: [studentId] })
+      .expect(201);
+    expect(body).toMatchObject({ total: 1, sent: 1 });
+    await ctx.post('/invitations/bulk').send({ studentIds: ['pas-un-uuid'] }).expect(400);
+  });
+
   it('retourne 404 pour un étudiant inexistant', async () => {
     await ctx
       .post('/students/00000000-0000-0000-0000-000000000000/invitations')

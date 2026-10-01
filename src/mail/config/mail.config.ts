@@ -9,4 +9,5 @@ export default registerAs('mail', () => ({
     fromName: process.env.SMTP_FROM_NAME,
     fromEmail: process.env.SMTP_FROM_EMAIL,
     appBaseUrl: process.env.APP_BASE_URL,
+    brevoApiKey: process.env.BREVO_API_KEY,
 }));

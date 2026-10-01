@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, Repository } from 'typeorm';
+import { DataSource, In, IsNull, Repository } from 'typeorm';
 import { StudentMailService } from '../mail/student-mail.service.js';
 import type { BulkSendReport } from '../mail/interfaces/mail-recipients.interfaces.js';
 import { Student } from '../students/student.entity.js';
@@ -52,6 +52,38 @@ export class InvitationsService {
         invitation.expiresAt,
       ),
     };
+  }
+
+  /**
+   * Invitation groupée : annule les liens en attente des étudiants visés,
+   * émet un nouveau lien pour chacun et envoie tous les mails en un seul lot.
+   * Sans liste, cible les étudiants dont le profil est incomplet.
+   */
+  async createBulk(studentIds?: string[]): Promise<BulkSendReport> {
+    const studentsRepo = this.dataSource.getRepository(Student);
+    const students = studentIds?.length
+      ? await studentsRepo.findBy({ id: In(studentIds) })
+      : await studentsRepo.find({
+          where: [{ whatsapp: IsNull() }, { profilePictureUrl: IsNull() }],
+        });
+    if (!students.length) return { total: 0, sent: 0, failed: [] };
+
+    await this.invitations.update(
+      { studentId: In(students.map((s) => s.id)), status: InvitationStatus.PENDING },
+      { status: InvitationStatus.CANCELLED },
+    );
+
+    const recipients = [];
+    for (const student of students) {
+      const { token, invitation } = await this.issue(student);
+      recipients.push({
+        prenom: student.firstName,
+        email: student.email,
+        token,
+        expiresAt: invitation.expiresAt ?? new Date(),
+      });
+    }
+    return this.studentMailService.sendProfileFormInvitations(recipients);
   }
 
   /** Annule les invitations en attente et en émet une nouvelle. */
