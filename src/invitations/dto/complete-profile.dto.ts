@@ -1,4 +1,4 @@
-import { IsString, Matches, MaxLength, MinLength } from 'class-validator';
+import { IsString, IsUrl, Matches, MaxLength, MinLength } from 'class-validator';
 
 /**
  * Le lien d'invitation ne permet de renseigner que la photo de profil et le
@@ -12,6 +12,7 @@ export class CompleteProfileDto {
   token: string;
 
   @IsString()
+  @IsUrl({ protocols: ['https'], require_protocol: true })
   @MaxLength(512)
   profilePictureUrl: string;
 

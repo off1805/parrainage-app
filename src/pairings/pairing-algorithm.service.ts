@@ -254,7 +254,7 @@ export class PairingAlgorithmService {
 
       const wave = this.solveWave({
         index: 0,
-        queue: this.shuffle(eligible),
+        queue: this.shuffle(eligible).slice(0, pool.length),
         pool,
         counts,
         maxById,

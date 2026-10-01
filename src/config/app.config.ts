@@ -10,4 +10,8 @@ export default registerAs('app', () => ({
   profileInvitationExpirationHours: Number(
     process.env.PROFILE_INVITATION_EXPIRATION_HOURS ?? 72,
   ),
+  corsOrigins: process.env.CORS_ORIGINS
+    ? process.env.CORS_ORIGINS.split(',').map((o) => o.trim().replace(/\/+$/, ''))
+    : undefined,
+  adminApiKey: process.env.ADMIN_API_KEY,
 }));
