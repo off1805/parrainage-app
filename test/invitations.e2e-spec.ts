@@ -173,7 +173,7 @@ describe('Invitations de profil (e2e)', () => {
       .post('/invitations/complete')
       .send({
         token: 'aaaaaaaaaaaaaaaaaaaaaaaa',
-        profilePictureUrl: 'https://a/b.jpg',
+        profilePictureUrl: 'https://example.com/b.jpg',
         whatsapp: '+33612345678',
       })
       .expect(404);

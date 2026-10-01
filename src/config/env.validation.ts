@@ -15,6 +15,8 @@ export const envValidationSchema = Joi.object({
   PORT: Joi.number().port().default(3000),
 
   FRONTEND_URL: Joi.string().uri().default('http://localhost:5173'),
+  CORS_ORIGINS: Joi.string().optional(),
+  ADMIN_API_KEY: requiredInProduction(Joi.string()),
   PROFILE_INVITATION_EXPIRATION_HOURS: Joi.number()
     .integer()
     .min(1)

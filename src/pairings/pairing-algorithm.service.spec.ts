@@ -228,6 +228,48 @@ describe('PairingAlgorithmService', () => {
       expect(counts).toEqual({ P1: 1, P2: 2, P3: 2, P4: 3 });
     });
 
+    it('réussit 50 tirages pour des capacités [2,2,2,2] avec 6 filleuls', () => {
+      const sponsors: [string, number][] = [['P1', 2], ['P2', 2], ['P3', 2], ['P4', 2]];
+      for (let i = 0; i < 50; i++) {
+        const result = service.generate(build(sponsors, 6));
+        expect(result).toHaveLength(6);
+        expect(new Set(result.map(a => a.menteeId)).size).toBe(6);
+        for (const [id, maxMentees] of sponsors) {
+          const count = result.filter(a => a.sponsorId === id).length;
+          expect(count).toBeGreaterThanOrEqual(1);
+          expect(count).toBeLessThanOrEqual(maxMentees);
+        }
+      }
+    });
+
+    it('réussit 50 tirages pour des capacités [1,3,3,3] avec 8 filleuls', () => {
+      const sponsors: [string, number][] = [['P1', 1], ['P2', 3], ['P3', 3], ['P4', 3]];
+      for (let i = 0; i < 50; i++) {
+        const result = service.generate(build(sponsors, 8));
+        expect(result).toHaveLength(8);
+        expect(new Set(result.map(a => a.menteeId)).size).toBe(8);
+        for (const [id, maxMentees] of sponsors) {
+          const count = result.filter(a => a.sponsorId === id).length;
+          expect(count).toBeGreaterThanOrEqual(1);
+          expect(count).toBeLessThanOrEqual(maxMentees);
+        }
+      }
+    });
+
+    it('réussit 50 tirages pour des capacités [3,3,3,3] avec 6 filleuls', () => {
+      const sponsors: [string, number][] = [['P1', 3], ['P2', 3], ['P3', 3], ['P4', 3]];
+      for (let i = 0; i < 50; i++) {
+        const result = service.generate(build(sponsors, 6));
+        expect(result).toHaveLength(6);
+        expect(new Set(result.map(a => a.menteeId)).size).toBe(6);
+        for (const [id, maxMentees] of sponsors) {
+          const count = result.filter(a => a.sponsorId === id).length;
+          expect(count).toBeGreaterThanOrEqual(1);
+          expect(count).toBeLessThanOrEqual(maxMentees);
+        }
+      }
+    });
+
     it('rattache tous les filleuls et donne au moins un filleul à chaque parrain', () => {
       const sponsors: [string, number][] = [
         ['P1', 3],

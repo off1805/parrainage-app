@@ -1,9 +1,11 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { APP_GUARD } from '@nestjs/core';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import type { TypeOrmModuleOptions } from '@nestjs/typeorm';
 import { AppController } from './app.controller.js';
 import { AppService } from './app.service.js';
+import { ApiKeyGuard } from './common/api-key.guard.js';
 import appConfig from './config/app.config.js';
 import databaseConfig from './config/database.config.js';
 import { envValidationSchema } from './config/env.validation.js';
@@ -33,6 +35,12 @@ import { StudentsModule } from './students/students.module.js';
     ExportsModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    {
+      provide: APP_GUARD,
+      useClass: ApiKeyGuard,
+    },
+  ],
 })
 export class AppModule {}
