@@ -10,7 +10,8 @@ async function bootstrap() {
   const config = app.get(ConfigService);
 
   app.enableCors({
-    origin: config.getOrThrow<string>('app.frontendUrl'),
+    // Accepte toutes les origines (l'origine de la requête est renvoyée telle quelle)
+    origin: true,
     credentials: true,
   });
   app.useGlobalPipes(

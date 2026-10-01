@@ -45,8 +45,8 @@ export const envValidationSchema = Joi.object({
     value.DATABASE_HOST && value.DATABASE_USER && value.DATABASE_NAME,
   );
   if (!hasUrl && !hasParts) {
-    return helpers.error('any.custom', {
-      message:
+    return helpers.message({
+      custom:
         'DATABASE_URL ou DATABASE_HOST + DATABASE_USER + DATABASE_NAME doit être renseigné',
     });
   }
