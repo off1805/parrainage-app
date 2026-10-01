@@ -8,7 +8,8 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, In, IsNull, Repository } from 'typeorm';
-import { StudentMailService } from '../mail/student-mail.service.js';
+import { MailService } from '../mail/mail.service.js';
+import { PROFILE_INVITATION_SUBJECT, StudentMailService } from '../mail/student-mail.service.js';
 import type { BulkSendReport } from '../mail/interfaces/mail-recipients.interfaces.js';
 import { Student } from '../students/student.entity.js';
 import { StudentsService } from '../students/students.service.js';
@@ -35,6 +36,7 @@ export class InvitationsService {
     private readonly invitations: Repository<ProfileInvitation>,
     private readonly dataSource: DataSource,
     private readonly studentsService: StudentsService,
+    private readonly mailService: MailService,
     private readonly studentMailService: StudentMailService,
     private readonly config: ConfigService,
   ) {}
@@ -84,6 +86,34 @@ export class InvitationsService {
       });
     }
     return this.studentMailService.sendProfileFormInvitations(recipients);
+  }
+
+  /**
+   * Suivi des invitations, étudiant par étudiant : dernière invitation émise
+   * (état, dates) et dernier événement de livraison connu chez Brevo.
+   */
+  async overview() {
+    const [students, invitations, deliveries] = await Promise.all([
+      this.dataSource.getRepository(Student).find(),
+      this.invitations.find({ order: { sentAt: 'DESC' } }),
+      this.mailService.recentDeliveries(PROFILE_INVITATION_SUBJECT),
+    ]);
+    const lastByStudent = new Map<string, ProfileInvitation>();
+    for (const inv of invitations) if (!lastByStudent.has(inv.studentId)) lastByStudent.set(inv.studentId, inv);
+
+    return {
+      deliveryTracking: deliveries !== null,
+      students: students.map((s) => {
+        const inv = lastByStudent.get(s.id);
+        return {
+          studentId: s.id,
+          invitation: inv
+            ? { status: inv.status, sentAt: inv.sentAt, expiresAt: inv.expiresAt, usedAt: inv.usedAt }
+            : null,
+          delivery: deliveries?.get(s.email.toLowerCase()) ?? null,
+        };
+      }),
+    };
   }
 
   /** Annule les invitations en attente et en émet une nouvelle. */
@@ -151,7 +181,8 @@ export class InvitationsService {
   private async issue(student: { id: string }) {
     const token = randomBytes(32).toString('base64url');
     const now = new Date();
-    const { profileInvitationExpirationHours } = this.config.getOrThrow('app');
+    const { profileInvitationExpirationHours, profileInvitationDeadline } =
+      this.config.getOrThrow('app');
 
     const invitation = await this.invitations.save(
       this.invitations.create({
@@ -159,9 +190,9 @@ export class InvitationsService {
         tokenHash: this.hash(token),
         status: InvitationStatus.PENDING,
         sentAt: now,
-        expiresAt: new Date(
-          now.getTime() + profileInvitationExpirationHours * 3_600_000,
-        ),
+        expiresAt:
+          profileInvitationDeadline ??
+          new Date(now.getTime() + profileInvitationExpirationHours * 3_600_000),
         usedAt: null,
       }),
     );

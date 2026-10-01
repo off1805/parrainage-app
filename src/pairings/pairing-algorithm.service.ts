@@ -4,6 +4,7 @@ import { PairingOrigin } from './pairing.entity.js';
 
 export enum PairingErrorCode {
   NO_MENTEES = 'NO_MENTEES',
+  SECTION_MISMATCH = 'SECTION_MISMATCH',
   NO_SPONSORS = 'NO_SPONSORS',
   NOT_ENOUGH_MENTEES = 'NOT_ENOUGH_MENTEES',
   INVALID_CAPACITY = 'INVALID_CAPACITY',

@@ -6,8 +6,8 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, Repository } from 'typeorm';
-import { Student, StudentLevel } from '../students/student.entity.js';
+import { DataSource, In, Repository } from 'typeorm';
+import { Student, StudentLevel, StudentSection } from '../students/student.entity.js';
 import { StudentsService } from '../students/students.service.js';
 import { CreatePairingConstraintDto } from './dto/create-pairing-constraint.dto.js';
 import type {
@@ -63,8 +63,11 @@ export class PairingsService {
 
   // ---------------------------------------------------------------- sessions
 
-  findSessions(): Promise<PairingSession[]> {
-    return this.sessions.find({ order: { createdAt: 'DESC' } });
+  findSessions(section?: StudentSection): Promise<PairingSession[]> {
+    return this.sessions.find({
+      where: section ? { section } : {},
+      order: { createdAt: 'DESC' },
+    });
   }
 
   findSessionOrFail(id: string): Promise<PairingSession> {
@@ -78,9 +81,9 @@ export class PairingsService {
     });
   }
 
-  createSession(): Promise<PairingSession> {
+  createSession(section: StudentSection = StudentSection.FR): Promise<PairingSession> {
     return this.sessions.save(
-      this.sessions.create({ status: PairingSessionStatus.DRAFT }),
+      this.sessions.create({ status: PairingSessionStatus.DRAFT, section }),
     );
   }
 
@@ -118,6 +121,7 @@ export class PairingsService {
     return {
       id: session.id,
       status: session.status,
+      section: session.section,
       createdAt: session.createdAt,
       generatedAt: session.generatedAt,
       finalizedAt: session.finalizedAt,
@@ -126,8 +130,8 @@ export class PairingsService {
   }
 
   async validate(sessionId: string): Promise<PairingValidationReport> {
-    await this.findSessionOrFail(sessionId);
-    const input = await this.buildInput();
+    const session = await this.findSessionOrFail(sessionId);
+    const input = await this.buildInput(session.section);
     return this.toReport(input, this.algorithm.validate(input));
   }
 
@@ -183,13 +187,17 @@ export class PairingsService {
 
   // ------------------------------------------------------------- constraints
 
-  findConstraints(
+  async findConstraints(
     query: QueryPairingConstraintsDto,
   ): Promise<PairingConstraint[]> {
-    return this.constraints.find({
-      where: query.type ? { type: query.type } : {},
-      order: { createdAt: 'DESC' },
-    });
+    const where: Record<string, unknown> = {};
+    if (query.type) where.type = query.type;
+    if (query.section) {
+      // Une contrainte appartient à la section de son parrain (les deux sont de la même section)
+      const sponsors = await this.studentsService.findAllByLevel(StudentLevel.ING4, query.section);
+      where.sponsorId = In(sponsors.map((s) => s.id));
+    }
+    return this.constraints.find({ where, order: { createdAt: 'DESC' } });
   }
 
   async createConstraint(
@@ -216,6 +224,13 @@ export class PairingsService {
       throw new BadRequestException({
         code: PairingErrorCode.INVALID_MENTEE,
         message: 'Le filleul doit être un ING3',
+      });
+    }
+
+    if (sponsor.section !== mentee.section) {
+      throw new BadRequestException({
+        code: PairingErrorCode.SECTION_MISMATCH,
+        message: 'Le parrain et le filleul doivent appartenir à la même section',
       });
     }
 
@@ -276,7 +291,7 @@ export class PairingsService {
   private async runGeneration(
     session: PairingSession,
   ): Promise<PairingSessionViewDto> {
-    const input = await this.buildInput();
+    const input = await this.buildInput(session.section);
     const issues = this.algorithm.validate(input);
     if (issues.length > 0) {
       throw new BadRequestException({
@@ -333,12 +348,15 @@ export class PairingsService {
     return this.getSession(session.id);
   }
 
-  private async buildInput(): Promise<AlgorithmInput> {
-    const [sponsors, mentees, constraints] = await Promise.all([
-      this.studentsService.findAllByLevel(StudentLevel.ING4),
-      this.studentsService.findAllByLevel(StudentLevel.ING3),
-      this.constraints.find(),
+  /** Données du tirage, limitées à une section : les deux parrainages sont indépendants. */
+  private async buildInput(section: StudentSection): Promise<AlgorithmInput> {
+    const [sponsors, mentees] = await Promise.all([
+      this.studentsService.findAllByLevel(StudentLevel.ING4, section),
+      this.studentsService.findAllByLevel(StudentLevel.ING3, section),
     ]);
+    const constraints = sponsors.length
+      ? await this.constraints.find({ where: { sponsorId: In(sponsors.map((s) => s.id)) } })
+      : [];
 
     return {
       sponsors: sponsors.map((s) => ({

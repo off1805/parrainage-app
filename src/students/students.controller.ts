@@ -5,8 +5,10 @@ import {
   Param,
   ParseUUIDPipe,
   Patch,
+  Post,
   Query,
 } from '@nestjs/common';
+import { CreateStudentDto } from './dto/create-student.dto.js';
 import { QueryStudentsDto } from './dto/query-students.dto.js';
 import { UpdateStudentDto } from './dto/update-student.dto.js';
 import { StudentsService } from './students.service.js';
@@ -18,6 +20,11 @@ export class StudentsController {
   @Get()
   findAll(@Query() query: QueryStudentsDto) {
     return this.studentsService.findAll(query);
+  }
+
+  @Post()
+  create(@Body() dto: CreateStudentDto) {
+    return this.studentsService.create(dto);
   }
 
   @Get(':id')

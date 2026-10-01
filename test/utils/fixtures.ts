@@ -1,10 +1,12 @@
 import type { DataSource, Repository } from 'typeorm';
-import { Student, StudentLevel } from '../../src/students/student.entity.js';
+import { Student, StudentLevel, StudentSection } from '../../src/students/student.entity.js';
 
 export interface StudentSpec {
   firstName: string;
   lastName: string;
   level: StudentLevel;
+  /** Francophone par défaut. */
+  section?: StudentSection;
   /** Nombre de filleuls maximum, pertinent pour un ING4. */
   maxMentees?: number;
   email?: string;
@@ -44,6 +46,7 @@ export async function seedStudents(
         email,
         matricule: spec.matricule ?? null,
         level: spec.level,
+        section: spec.section ?? StudentSection.FR,
         whatsapp: spec.whatsapp ?? null,
         profilePictureUrl: spec.profilePictureUrl ?? null,
         maxMentees:

@@ -7,6 +7,16 @@ import {
   ProfileInvitationRecipient,
 } from './interfaces/mail-recipients.interfaces.js';
 
+/** « samedi 3 octobre 2026 à 12h00 », à l'heure du Cameroun quel que soit le fuseau du serveur. */
+function formatDeadline(date: Date): string {
+  const tz = { timeZone: 'Africa/Douala' } as const;
+  const day = date.toLocaleDateString('fr-FR', { ...tz, weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  const time = date.toLocaleTimeString('fr-FR', { ...tz, hour: '2-digit', minute: '2-digit' }).replace(':', 'h');
+  return `${day} à ${time}`;
+}
+
+export const PROFILE_INVITATION_SUBJECT = 'Complète ton profil pour le programme de parrainage';
+
 @Injectable()
 export class StudentMailService {
   private readonly logger = new Logger(StudentMailService.name);
@@ -48,12 +58,12 @@ export class StudentMailService {
     return this.dispatch(
       recipients,
       {
-        subject: 'Complète ton profil pour le programme de parrainage',
+        subject: PROFILE_INVITATION_SUBJECT,
         template: 'profile-invitation',
         context: (r) => ({
           prenom: r.prenom,
           formUrl: `${frontendUrl}/invitation?token=${encodeURIComponent(r.token)}`,
-          expiresAt: r.expiresAt.toLocaleDateString('fr-FR'),
+          expiresAt: formatDeadline(r.expiresAt),
         }),
       },
       'Invitations profil',

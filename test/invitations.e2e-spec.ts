@@ -267,6 +267,16 @@ describe('Invitations de profil (e2e)', () => {
     await ctx.post('/invitations/bulk').send({ studentIds: ['pas-un-uuid'] }).expect(400);
   });
 
+  it('donne le suivi des invitations par étudiant', async () => {
+    let { body } = await ctx.get('/invitations/overview').expect(200);
+    expect(body.deliveryTracking).toBe(false);
+    expect(body.students).toEqual([{ studentId, invitation: null, delivery: null }]);
+
+    await ctx.post(`/students/${studentId}/invitations`).expect(201);
+    ({ body } = await ctx.get('/invitations/overview').expect(200));
+    expect(body.students[0].invitation).toMatchObject({ status: InvitationStatus.PENDING, usedAt: null });
+  });
+
   it('retourne 404 pour un étudiant inexistant', async () => {
     await ctx
       .post('/students/00000000-0000-0000-0000-000000000000/invitations')

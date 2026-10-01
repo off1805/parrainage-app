@@ -11,6 +11,7 @@ import {
 } from '@nestjs/common';
 import { CreatePairingConstraintDto } from './dto/create-pairing-constraint.dto.js';
 import { QueryPairingConstraintsDto } from './dto/query-pairing-constraints.dto.js';
+import { SectionQueryDto } from './dto/section-query.dto.js';
 import { PairingsService } from './pairings.service.js';
 
 @Controller()
@@ -38,13 +39,14 @@ export class PairingsController {
   // --------------------------------------------------------- pairing sessions
 
   @Get('pairing-sessions')
-  findSessions() {
-    return this.pairingsService.findSessions();
+  findSessions(@Query() query: SectionQueryDto) {
+    return this.pairingsService.findSessions(query.section);
   }
 
+  /** Corps facultatif : { section: 'FR' | 'EN' } (francophone par défaut). */
   @Post('pairing-sessions')
-  createSession() {
-    return this.pairingsService.createSession();
+  createSession(@Body() dto: SectionQueryDto) {
+    return this.pairingsService.createSession(dto.section);
   }
 
   @Get('pairing-sessions/:id')

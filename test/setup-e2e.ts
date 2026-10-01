@@ -34,3 +34,8 @@ const defaults: Record<string, string> = {
 for (const [key, value] of Object.entries(defaults)) {
   process.env[key] ??= value;
 }
+
+// Forcés, même si le `.env` local les définit : les tests ne doivent jamais
+// envoyer de vrais emails via Brevo, ni dépendre de la date limite configurée.
+process.env.BREVO_API_KEY = '';
+process.env.PROFILE_INVITATION_DEADLINE = '';

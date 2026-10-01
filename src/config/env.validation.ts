@@ -11,7 +11,7 @@ const requiredInProduction = <T extends Joi.AnySchema>(schema: T) =>
 /** Paramètres SMTP : obligatoires en production seulement si Brevo n'est pas utilisé. */
 const smtpRequiredInProduction = <T extends Joi.AnySchema>(schema: T) =>
   schema.when('BREVO_API_KEY', {
-    is: Joi.exist(),
+    is: Joi.string().min(1).required(),
     // oxlint-disable-next-line unicorn/no-thenable -- `then` est une clé de l'API Joi, pas une thenable
     then: Joi.optional(),
     otherwise: requiredInProduction(schema),
@@ -25,6 +25,8 @@ export const envValidationSchema = Joi.object({
 
   FRONTEND_URL: Joi.string().uri().default('http://localhost:5173'),
   CORS_ORIGINS: Joi.string().optional(),
+  // ex. 2026-10-03T12:00:00+01:00 ; prioritaire sur PROFILE_INVITATION_EXPIRATION_HOURS
+  PROFILE_INVITATION_DEADLINE: Joi.date().iso().allow('').optional(),
   PROFILE_INVITATION_EXPIRATION_HOURS: Joi.number()
     .integer()
     .min(1)
@@ -47,7 +49,7 @@ export const envValidationSchema = Joi.object({
   SMTP_USER: smtpRequiredInProduction(Joi.string()),
   SMTP_PASS: smtpRequiredInProduction(Joi.string().allow('')),
   // Envoi par l'API HTTP de Brevo (recommandé sur Render, qui bloque les ports SMTP)
-  BREVO_API_KEY: Joi.string().optional(),
+  BREVO_API_KEY: Joi.string().allow('').optional(),
   SMTP_FROM_NAME: Joi.string().default('Programme de parrainage'),
   SMTP_FROM_EMAIL: requiredInProduction(Joi.string().email()),
   APP_BASE_URL: Joi.string().uri().default('http://localhost:3000'),

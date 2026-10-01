@@ -6,9 +6,10 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { ILike, Repository } from 'typeorm';
 import type { EntityManager } from 'typeorm';
-import { Student, StudentLevel } from './student.entity.js';
+import { Student, StudentLevel, StudentSection } from './student.entity.js';
 import { QueryStudentsDto } from './dto/query-students.dto.js';
 import { UpdateStudentDto } from './dto/update-student.dto.js';
+import { CreateStudentDto } from './dto/create-student.dto.js';
 
 @Injectable()
 export class StudentsService {
@@ -20,6 +21,7 @@ export class StudentsService {
   findAll(query: QueryStudentsDto): Promise<Student[]> {
     const where: Record<string, unknown> = {};
     if (query.level) where.level = query.level;
+    if (query.section) where.section = query.section;
     if (query.search) {
       where.lastName = ILike(`%${query.search}%`);
     }
@@ -29,8 +31,11 @@ export class StudentsService {
     });
   }
 
-  findAllByLevel(level: StudentLevel): Promise<Student[]> {
-    return this.students.find({ where: { level }, order: { lastName: 'ASC' } });
+  findAllByLevel(level: StudentLevel, section?: StudentSection): Promise<Student[]> {
+    return this.students.find({
+      where: section ? { level, section } : { level },
+      order: { lastName: 'ASC' },
+    });
   }
 
   countByLevel(level: StudentLevel): Promise<number> {
@@ -51,6 +56,25 @@ export class StudentsService {
       throw new NotFoundException(`Étudiant introuvable : ${id}`);
     }
     return student;
+  }
+
+  /** Ajout manuel d'un étudiant ; l'email doit être libre. */
+  async create(dto: CreateStudentDto): Promise<Student> {
+    await this.assertEmailAvailable(dto.email);
+    const [student] = await this.insertMany([
+      {
+        firstName: dto.firstName,
+        lastName: dto.lastName,
+        email: dto.email,
+        matricule: dto.matricule || null,
+        level: dto.level,
+        section: dto.section ?? StudentSection.FR,
+        maxMentees: dto.level === StudentLevel.ING4 ? dto.maxMentees! : null,
+        whatsapp: null,
+        profilePictureUrl: null,
+      },
+    ]);
+    return student!;
   }
 
   async update(id: string, dto: UpdateStudentDto): Promise<Student> {

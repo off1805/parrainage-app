@@ -7,21 +7,35 @@
   <title>Complète ton profil · Parrainage SJI</title>
   <!-- Police de code (ignorée par certains clients mail : repli sur Consolas / Courier New) -->
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet" />
+  <style>
+    /* Téléphone : pas de cadre, le contenu occupe toute la largeur */
+    @media only screen and (max-width: 600px) {
+      .outer { background: #FFFFFF !important; }
+      .outer-cell { padding: 0 !important; }
+      .wrap { max-width: 100% !important; width: 100% !important; }
+      .card { border: 0 !important; border-radius: 0 !important; }
+      .card-bar { border-radius: 0 !important; }
+      .head-cell { padding: 16px 16px 12px !important; }
+      .body-cell { padding: 22px 16px 8px !important; }
+      .foot-cell { padding: 14px 16px 22px !important; }
+      .footer-cell { padding: 12px 16px 20px !important; }
+    }
+  </style>
 </head>
-<body style="margin:0;padding:0;background:#F8FAFC;">
+<body class="outer" style="margin:0;padding:0;background:#F8FAFC;">
   <!-- Texte d'aperçu affiché dans la liste des mails -->
   <div style="display:none;max-height:0;overflow:hidden;opacity:0;">
-    {{prenom}}, il nous manque deux variables pour créer ta carte de parrainage.
+    {{prenom}}, complète ton profil de parrainage en 2 minutes : photo et numéro WhatsApp.
   </div>
 
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#F8FAFC;">
+  <table role="presentation" class="outer" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#F8FAFC;">
     <tr>
-      <td align="center" style="padding:32px 12px;">
+      <td align="center" class="outer-cell" style="padding:32px 12px;">
 
         <!-- En-tête -->
-        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:560px;">
+        <table role="presentation" class="wrap" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:560px;">
           <tr>
-            <td style="padding:0 4px 16px;font-family:'JetBrains Mono',Consolas,'Courier New',monospace;font-size:13px;color:#0F172A;">
+            <td class="head-cell" style="padding:0 4px 16px;font-family:'JetBrains Mono',Consolas,'Courier New',monospace;font-size:13px;color:#0F172A;">
               <span style="display:inline-block;background:#1D4ED8;color:#FFFFFF;font-weight:700;padding:4px 8px;border-radius:5px;border-bottom:3px solid #FACC15;">SJI</span>
               &nbsp;Saint Jean Ingénieur
             </td>
@@ -29,11 +43,11 @@
         </table>
 
         <!-- Carte façon fenêtre d'éditeur -->
-        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
+        <table role="presentation" class="wrap card" width="100%" cellpadding="0" cellspacing="0" border="0"
                style="max-width:560px;background:#FFFFFF;border:1px solid #E2E8F0;border-radius:14px;">
           <!-- Barre de titre -->
           <tr>
-            <td style="padding:10px 16px;background:#F8FAFC;border-bottom:1px solid #E2E8F0;border-radius:14px 14px 0 0;font-family:'JetBrains Mono',Consolas,'Courier New',monospace;font-size:12px;color:#64748B;">
+            <td class="card-bar" style="padding:10px 16px;background:#F8FAFC;border-bottom:1px solid #E2E8F0;border-radius:14px 14px 0 0;font-family:'JetBrains Mono',Consolas,'Courier New',monospace;font-size:12px;color:#64748B;">
               <span style="color:#F87171;">&#9679;</span>
               <span style="color:#FACC15;">&#9679;</span>
               <span style="color:#4ADE80;">&#9679;</span>
@@ -43,28 +57,23 @@
 
           <!-- Corps -->
           <tr>
-            <td style="padding:28px 28px 8px;font-family:'JetBrains Mono',Consolas,'Courier New',monospace;">
+            <td class="body-cell" style="padding:28px 28px 8px;font-family:'JetBrains Mono',Consolas,'Courier New',monospace;">
               <p style="margin:0 0 6px;font-size:12px;color:#94A3B8;font-style:italic;">// Bienvenue dans le programme de parrainage</p>
               <h1 style="margin:0 0 20px;font-size:26px;line-height:1.25;color:#0F172A;font-weight:700;">
                 Bonjour, <span style="color:#1D4ED8;background:#FEF9C3;padding:0 4px;">{{prenom}}</span><span style="color:#1D4ED8;">_</span>
               </h1>
 
-              <!-- Petit script -->
-              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
-                     style="background:#F8FAFC;border:1px solid #E2E8F0;border-radius:10px;">
-                <tr>
-                  <td style="padding:14px 16px;font-family:'JetBrains Mono',Consolas,'Courier New',monospace;font-size:13px;line-height:1.75;color:#0F172A;">
-                    <span style="color:#1D4ED8;font-weight:700;">$</span> <span style="color:#7C3AED;">node</span> parrainage.js --invite<br />
-                    <span style="color:#94A3B8;">&gt;</span> Ici, les aînés guident les nouveaux :<br />
-                    <span style="color:#94A3B8;">&gt;</span> un parrain, un filleul, un binôme.<br />
-                    <span style="color:#94A3B8;">&gt;</span> Pour créer ta carte, il nous manque<br />
-                    <span style="color:#94A3B8;">&gt;</span> juste deux variables :
-                  </td>
-                </tr>
-              </table>
+              <!-- Invitation directe -->
+              <p style="margin:0 0 6px;font-size:14px;line-height:1.7;color:#0F172A;">
+                Tu fais partie du programme de parrainage de Saint Jean Ingénieur.
+                Pour préparer ta carte, <b>complète ton profil en 2 minutes</b> en cliquant sur le bouton ci-dessous.
+              </p>
+              <p style="margin:0;font-size:14px;line-height:1.7;color:#0F172A;">
+                Tu auras simplement besoin de :
+              </p>
 
               <!-- Les deux « variables » attendues -->
-              <p style="margin:20px 0 4px;font-size:14px;color:#0F172A;">
+              <p style="margin:14px 0 4px;font-size:14px;color:#0F172A;">
                 <span style="color:#1D4ED8;font-weight:700;">const</span> photo<span style="color:#94A3B8;">:</span> <span style="color:#0E7490;">Image</span>
               </p>
               <p style="margin:0 0 12px;font-size:12px;color:#94A3B8;font-style:italic;">// ta plus belle photo, visage bien visible</p>
@@ -97,7 +106,7 @@
 
           <!-- Lien de secours -->
           <tr>
-            <td style="padding:14px 28px 22px;border-top:1px dashed #E2E8F0;font-family:'JetBrains Mono',Consolas,'Courier New',monospace;font-size:11px;line-height:1.6;color:#94A3B8;">
+            <td class="foot-cell" style="padding:14px 28px 22px;border-top:1px dashed #E2E8F0;font-family:'JetBrains Mono',Consolas,'Courier New',monospace;font-size:11px;line-height:1.6;color:#94A3B8;">
               Le bouton ne fonctionne pas ? Copie ce lien dans ton navigateur :<br />
               <a href="{{{formUrl}}}" style="color:#1D4ED8;word-break:break-all;">{{{formUrl}}}</a>
             </td>
@@ -105,9 +114,9 @@
         </table>
 
         <!-- Pied -->
-        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:560px;">
+        <table role="presentation" class="wrap" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:560px;">
           <tr>
-            <td align="center" style="padding:16px 4px 0;font-family:'JetBrains Mono',Consolas,'Courier New',monospace;font-size:11px;color:#94A3B8;">
+            <td align="center" class="footer-cell" style="padding:16px 4px 0;font-family:'JetBrains Mono',Consolas,'Courier New',monospace;font-size:11px;color:#94A3B8;">
               &lt;/&gt; parrainage@sji · Programme de parrainage Saint Jean Ingénieur
             </td>
           </tr>

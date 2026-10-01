@@ -111,6 +111,36 @@ export class MailService {
         await this.brevo(apiKey, { sender, to: [{ email: to }], subject, htmlContent });
     }
 
+    /**
+     * Dernier événement Brevo par adresse (délivré, ouvert, rejeté…) sur les 30 derniers jours,
+     * limité aux mails dont l'objet est `subject`. `null` si Brevo n'est pas configuré ou injoignable.
+     */
+    async recentDeliveries(subject: string): Promise<Map<string, { event: string; date: string; reason?: string }> | null> {
+        const { brevoApiKey } = this.config.getOrThrow('mail');
+        if (!brevoApiKey) return null;
+        try {
+            const res = await fetch('https://api.brevo.com/v3/smtp/statistics/events?days=30&limit=2500&sort=desc', {
+                headers: { 'api-key': brevoApiKey, accept: 'application/json' },
+                signal: AbortSignal.timeout(15_000),
+            });
+            if (!res.ok) throw new Error(`Brevo ${res.status}`);
+            const { events = [] } = (await res.json()) as {
+                events?: { email: string; event: string; date: string; subject?: string; reason?: string }[];
+            };
+            const latest = new Map<string, { event: string; date: string; reason?: string }>();
+            // Trié du plus récent au plus ancien : on garde le premier événement vu par adresse
+            for (const e of events) {
+                if (e.subject && e.subject !== subject) continue;
+                const key = e.email.toLowerCase();
+                if (!latest.has(key)) latest.set(key, { event: e.event, date: e.date, reason: e.reason });
+            }
+            return latest;
+        } catch (e) {
+            this.logger.warn(`Événements Brevo indisponibles : ${String(e)}`);
+            return null;
+        }
+    }
+
     private async brevo(apiKey: string, body: Record<string, unknown>): Promise<void> {
         const res = await fetch('https://api.brevo.com/v3/smtp/email', {
             method: 'POST',

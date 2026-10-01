@@ -12,6 +12,12 @@ export enum StudentLevel {
   ING4 = 'ING4',
 }
 
+/** Section du programme : chaque section a son propre parrainage, indépendant. */
+export enum StudentSection {
+  FR = 'FR', // francophone
+  EN = 'EN', // anglophone
+}
+
 @Entity('students')
 export class Student {
   @PrimaryGeneratedColumn('uuid')
@@ -32,6 +38,10 @@ export class Student {
 
   @Column({ type: 'varchar', length: 10 })
   level: StudentLevel;
+
+  @Index('idx_students_section')
+  @Column({ type: 'varchar', length: 2, default: StudentSection.FR })
+  section: StudentSection;
 
   @Column({ type: 'varchar', length: 32, nullable: true })
   whatsapp: string | null;

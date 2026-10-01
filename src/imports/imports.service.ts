@@ -5,7 +5,7 @@ import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
 import { DataSource, In, Repository } from 'typeorm';
 import { ImportOptionsDto } from './dto/import-options.dto.js';
-import { Student, StudentLevel } from '../students/student.entity.js';
+import { Student, StudentLevel, StudentSection } from '../students/student.entity.js';
 import { ImportStudentRowDto } from './dto/import-student-row.dto.js';
 import type {
   ImportStudentsError,
@@ -18,6 +18,7 @@ const HEADER_ALIASES: Record<keyof ImportStudentRowDto, string[]> = {
   email: ['email', 'mail', 'courriel'],
   matricule: ['matricule', 'mat'],
   level: ['level', 'niveau', 'promo', 'promotion'],
+  section: ['section', 'langue', 'language', 'filiere'],
   maxMentees: [
     'maxmentees',
     'capacity',
@@ -152,7 +153,7 @@ export class ImportsService {
       const field = ALIAS_TO_FIELD.get(key);
       if (!field) {
         throw new BadRequestException(
-          `Colonne inconnue : "${cell}". Colonnes attendues : firstName, lastName, email, matricule, level, maxMentees`,
+          `Colonne inconnue : "${cell}". Colonnes attendues : firstName, lastName, email, matricule, level, section, maxMentees`,
         );
       }
       return field;
@@ -280,6 +281,7 @@ export class ImportsService {
         email: data.email.toLowerCase(),
         matricule: data.matricule || null,
         level: data.level,
+        section: data.section,
         maxMentees: data.level === StudentLevel.ING4 ? data.maxMentees! : null,
         whatsapp: null,
         profilePictureUrl: null,
@@ -300,6 +302,7 @@ export class ImportsService {
     const instance = plainToInstance(ImportStudentRowDto, {
       ...candidate,
       level: this.normalizeLevel(candidate.level ?? ''),
+      section: this.normalizeSection(candidate.section ?? ''),
       maxMentees: this.normalizeMaxMentees(candidate.maxMentees),
     });
 
@@ -331,6 +334,8 @@ export class ImportsService {
       matricule: raw.matricule ?? '',
       // Le niveau choisi à l'import prime sur la colonne du fichier
       level: options.level ?? raw.level ?? '',
+      // Section : option d'import, sinon colonne du fichier, sinon francophone
+      section: options.section ?? (raw.section || StudentSection.FR),
       maxMentees:
         raw.maxMentees || (options.maxMentees ? String(options.maxMentees) : ''),
     };
@@ -343,6 +348,18 @@ export class ImportsService {
       return StudentLevel.ING3;
     if (value === 'ING4' || value === '4ING' || value === 'ING04')
       return StudentLevel.ING4;
+    return raw;
+  }
+
+  /** Accepte FR, francophone, français, EN, anglophone, english… → FR | EN. */
+  private normalizeSection(raw: string): string {
+    const value = raw
+      .normalize('NFD')
+      .replace(/\p{Diacritic}/gu, '')
+      .toLowerCase()
+      .trim();
+    if (['fr', 'francophone', 'francais', 'french'].includes(value)) return StudentSection.FR;
+    if (['en', 'anglophone', 'anglais', 'english'].includes(value)) return StudentSection.EN;
     return raw;
   }
 

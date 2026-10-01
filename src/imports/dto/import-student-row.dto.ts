@@ -9,7 +9,7 @@ import {
   Min,
   MinLength,
 } from 'class-validator';
-import { StudentLevel } from '../../students/student.entity.js';
+import { StudentLevel, StudentSection } from '../../students/student.entity.js';
 
 /**
  * Une ligne du fichier d'import, telle que normalisée par l'ImportsService.
@@ -37,6 +37,9 @@ export class ImportStudentRowDto {
 
   @IsEnum(StudentLevel, { message: 'level doit valoir ING3 ou ING4' })
   level: StudentLevel;
+
+  @IsEnum(StudentSection, { message: 'section doit valoir FR (francophone) ou EN (anglophone)' })
+  section: StudentSection;
 
   @IsOptional()
   @IsInt({ message: 'maxMentees doit être un entier' })

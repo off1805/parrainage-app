@@ -1,6 +1,6 @@
 import { Type } from 'class-transformer';
 import { IsEnum, IsInt, IsOptional, Max, Min } from 'class-validator';
-import { StudentLevel } from '../../students/student.entity.js';
+import { StudentLevel, StudentSection } from '../../students/student.entity.js';
 
 /**
  * Champs multipart facultatifs envoyés avec le fichier d'import.
@@ -12,6 +12,11 @@ export class ImportOptionsDto {
   @IsOptional()
   @IsEnum(StudentLevel, { message: 'level doit valoir ING3 ou ING4' })
   level?: StudentLevel;
+
+  /** Section appliquée à toutes les lignes (remplace la colonne du fichier). Sinon colonne, sinon FR. */
+  @IsOptional()
+  @IsEnum(StudentSection, { message: 'section doit valoir FR ou EN' })
+  section?: StudentSection;
 
   @IsOptional()
   @Type(() => Number)

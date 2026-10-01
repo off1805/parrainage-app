@@ -21,6 +21,12 @@ export class InvitationsController {
     return this.invitationsService.create(studentId);
   }
 
+  /** Suivi : dernière invitation et livraison du mail, pour chaque étudiant. */
+  @Get('invitations/overview')
+  overview() {
+    return this.invitationsService.overview();
+  }
+
   /** Invite plusieurs étudiants d'un coup (par défaut : profils incomplets). */
   @Post('invitations/bulk')
   bulk(@Body() dto: BulkInvitationsDto) {
