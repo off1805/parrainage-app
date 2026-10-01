@@ -10,7 +10,6 @@ import {
 import { CompleteProfileDto } from './dto/complete-profile.dto.js';
 import { VerifyInvitationDto } from './dto/verify-invitation.dto.js';
 import { InvitationsService } from './invitations.service.js';
-import { Public } from '../common/public.decorator.js';
 
 @Controller()
 export class InvitationsController {
@@ -26,13 +25,11 @@ export class InvitationsController {
     return this.invitationsService.resend(studentId);
   }
 
-  @Public()
   @Get('invitations/verify')
   verify(@Query() query: VerifyInvitationDto) {
     return this.invitationsService.verify(query.token);
   }
 
-  @Public()
   @Post('invitations/complete')
   complete(@Body() dto: CompleteProfileDto) {
     return this.invitationsService.complete(dto);

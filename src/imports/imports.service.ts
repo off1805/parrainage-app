@@ -4,6 +4,7 @@ import ExcelJS from 'exceljs';
 import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
 import { DataSource, In, Repository } from 'typeorm';
+import { ImportOptionsDto } from './dto/import-options.dto.js';
 import { Student, StudentLevel } from '../students/student.entity.js';
 import { ImportStudentRowDto } from './dto/import-student-row.dto.js';
 import type {
@@ -44,9 +45,12 @@ export class ImportsService {
     private readonly dataSource: DataSource,
   ) {}
 
-  async importFile(file: Express.Multer.File): Promise<ImportStudentsResult> {
+  async importFile(
+    file: Express.Multer.File,
+    options: ImportOptionsDto = {},
+  ): Promise<ImportStudentsResult> {
     const rows = await this.readRows(file);
-    return this.persist(rows);
+    return this.persist(rows, options);
   }
 
   // ------------------------------------------------------------------ parsing
@@ -68,11 +72,14 @@ export class ImportsService {
     const lines: string[] = [];
     let current = '';
     let inQuotes = false;
+    // Décodage du fichier entier : un décodage octet par octet casserait les
+    // caractères UTF-8 sur plusieurs octets (accents). Le BOM éventuel est retiré.
+    const text = buffer.toString('utf-8').replace(/^\uFEFF/, '');
 
-    for (let i = 0; i < buffer.length; i += 1) {
-      const char = buffer.toString('utf-8', i, i + 1);
+    for (let i = 0; i < text.length; i += 1) {
+      const char = text[i];
       if (char === '"') {
-        if (inQuotes && buffer.toString('utf-8', i + 1, i + 2) === '"') {
+        if (inQuotes && text[i + 1] === '"') {
           current += '"';
           i += 1;
         } else {
@@ -81,7 +88,7 @@ export class ImportsService {
         continue;
       }
       if (!inQuotes && (char === '\n' || char === '\r')) {
-        if (char === '\r' && buffer.toString('utf-8', i + 1, i + 2) === '\n')
+        if (char === '\r' && text[i + 1] === '\n')
           i += 1;
         lines.push(current);
         current = '';
@@ -165,14 +172,17 @@ export class ImportsService {
 
   // ---------------------------------------------------------------- validation
 
-  private async persist(rawRows: RawRow[]): Promise<ImportStudentsResult> {
+  private async persist(
+    rawRows: RawRow[],
+    options: ImportOptionsDto,
+  ): Promise<ImportStudentsResult> {
     const errors: ImportStudentsError[] = [];
     const seenInFile = new Set<string>();
     const valid: { row: number; data: ImportStudentRowDto }[] = [];
 
     for (const [index, raw] of rawRows.entries()) {
       const rowNumber = index + 2; // +1 en-tête, +1 base 1-based
-      const candidate = this.toCandidate(raw);
+      const candidate = this.toCandidate(raw, options);
       const { instance, errors: rowErrors } = await this.validateRow(
         candidate,
         seenInFile,
@@ -280,14 +290,16 @@ export class ImportsService {
     return { instance, errors: [...new Set(messages)] };
   }
 
-  private toCandidate(raw: RawRow): RawRow {
+  private toCandidate(raw: RawRow, options: ImportOptionsDto): RawRow {
     return {
       firstName: raw.firstName ?? '',
       lastName: raw.lastName ?? '',
       email: raw.email ?? '',
       matricule: raw.matricule ?? '',
-      level: raw.level ?? '',
-      maxMentees: raw.maxMentees ?? '',
+      // Le niveau choisi à l'import prime sur la colonne du fichier
+      level: options.level ?? raw.level ?? '',
+      maxMentees:
+        raw.maxMentees || (options.maxMentees ? String(options.maxMentees) : ''),
     };
   }
 

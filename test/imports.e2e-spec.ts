@@ -197,6 +197,47 @@ describe("Import d'étudiants (e2e)", () => {
     expect(body).toEqual({ imported: 1, rejected: 0, errors: [] });
   });
 
+  it('applique le niveau et la capacité choisis à l’import', async () => {
+    const content = [
+      'firstName,lastName,email,maxMentees',
+      'Ama,Ndi,ama@sji.cm,',
+      'Ben,Eto,ben@sji.cm,3',
+    ].join('\n');
+    const { body } = await ctx
+      .post('/students/import')
+      .field('level', 'ING4')
+      .field('maxMentees', '2')
+      .attach('file', csv(content), { filename: 'ing4.csv', contentType: 'text/csv' })
+      .expect(201);
+    expect(body).toMatchObject({ imported: 2, rejected: 0 });
+
+    const { body: students } = await ctx.get('/students?level=ING4').expect(200);
+    const capacity = Object.fromEntries(
+      students.map((s: { email: string; maxMentees: number }) => [s.email, s.maxMentees]),
+    );
+    expect(capacity).toEqual({ 'ama@sji.cm': 2, 'ben@sji.cm': 3 });
+  });
+
+  it('refuse un niveau d’import invalide', async () => {
+    const response = await ctx
+      .post('/students/import')
+      .field('level', 'ING5')
+      .attach('file', csv('firstName,lastName,email\nA,B,a@b.fr'), {
+        filename: 'x.csv',
+        contentType: 'text/csv',
+      });
+    expect(response.status).toBe(400);
+  });
+
+  it('lit un CSV UTF-8 avec accents dans les en-têtes et les valeurs', async () => {
+    const content = '\uFEFFPrénom,Nom,Email,Niveau\nLéa,Mbarga,lea@sji.cm,ING3\n';
+    const { body } = await importFile(ctx.post, csv(content), 'accents.csv');
+    expect(body).toMatchObject({ imported: 1, rejected: 0 });
+
+    const { body: students } = await ctx.get('/students').expect(200);
+    expect(students[0]).toMatchObject({ firstName: 'Léa', lastName: 'Mbarga' });
+  });
+
   it('refuse une colonne inconnue', async () => {
     const content = [
       'firstName,lastName,email,niveau,date_naissance',

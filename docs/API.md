@@ -158,6 +158,17 @@ sans faire échouer l'import.
 
 **Content-Type** : `multipart/form-data` · **Champ fichier** : `file` · **Taille max** : 5 Mo
 
+**Champs facultatifs** (multipart, à côté de `file`) :
+
+| Champ | Valeurs | Effet |
+|---|---|---|
+| `level` | `ING3` / `ING4` | Niveau appliqué à **toutes** les lignes. Il remplace la colonne `level` du fichier, qui devient facultative. |
+| `maxMentees` | entier 1–50 | Capacité par défaut des `ING4` dont la ligne ne précise pas `maxMentees`. |
+
+```bash
+curl -F file=@ing4.csv -F level=ING4 -F maxMentees=2 http://localhost:3000/students/import
+```
+
 **Colonnes attendues** (l'ordre n'importe pas, la casse/les accents/espaces sont ignorés) :
 
 | Colonne | Alias acceptés | Obligatoire | Règle |
@@ -166,8 +177,8 @@ sans faire échouer l'import.
 | `lastName` | `nom`, `last` | oui | non vide, ≤ 100 |
 | `email` | `mail`, `courriel` | oui | format email valide, unique |
 | `matricule` | `mat` | non | ≤ 50 |
-| `level` | `niveau`, `promo`, `promotion` | oui | `ING3` / `ING4` (accepte `4 ING`, `3ing`…) |
-| `maxMentees` | `capacity`, `capacite`, `maxfilleuls` | oui si `ING4` | entier 1–50, ignoré pour un `ING3` |
+| `level` | `niveau`, `promo`, `promotion` | oui, sauf si le champ `level` est envoyé | `ING3` / `ING4` (accepte `4 ING`, `3ing`…) |
+| `maxMentees` | `capacity`, `capacite`, `maxfilleuls` | oui si `ING4` (sauf champ `maxMentees` envoyé) | entier 1–50, ignoré pour un `ING3` |
 
 **`201` → `ImportResult`**
 
