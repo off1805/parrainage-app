@@ -141,7 +141,7 @@ export default function Invitation() {
         }
 
         const compressed = await compressImage(photo);
-        const filename = `${crypto.randomUUID()}.jpg`;
+        const filename = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}.jpg`;
 
         const { error: uploadError } = await supabase.storage
           .from('profile-pictures')

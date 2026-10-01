@@ -63,7 +63,7 @@ button:hover { background: var(--sand); }
 
 /* ── Invitation page (mobile-first) ── */
 .inv-page {
-  min-height: 100%; display: flex; align-items: center; justify-content: center;
+  height: 100%; display: flex; align-items: center; justify-content: center;
   padding: 1.5rem; overflow-y: auto;
 }
 .inv-card {
