@@ -1,11 +1,13 @@
 import {
   BadRequestException,
+  Body,
   Controller,
   Post,
   UploadedFile,
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { ImportOptionsDto } from './dto/import-options.dto.js';
 import { ImportsService } from './imports.service.js';
 
 const ALLOWED_MIME_TYPES = new Set([
@@ -38,12 +40,15 @@ export class ImportsController {
       },
     }),
   )
-  import(@UploadedFile() file?: Express.Multer.File) {
+  import(
+    @UploadedFile() file: Express.Multer.File | undefined,
+    @Body() options: ImportOptionsDto,
+  ) {
     if (!file) {
       throw new BadRequestException(
         'Aucun fichier reçu (champ multipart "file")',
       );
     }
-    return this.importsService.importFile(file);
+    return this.importsService.importFile(file, options);
   }
 }

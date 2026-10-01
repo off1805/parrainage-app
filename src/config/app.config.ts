@@ -13,5 +13,4 @@ export default registerAs('app', () => ({
   corsOrigins: process.env.CORS_ORIGINS
     ? process.env.CORS_ORIGINS.split(',').map((o) => o.trim().replace(/\/+$/, ''))
     : undefined,
-  adminApiKey: process.env.ADMIN_API_KEY,
 }));
