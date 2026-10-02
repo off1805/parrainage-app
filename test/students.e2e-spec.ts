@@ -69,4 +69,44 @@ describe("Ajout manuel d'un étudiant (e2e)", () => {
       await ctx.patch(`/students/${b.id}`).send({ firstName: 'Bea' }).expect(200);
     });
   });
+
+  describe('retrait', () => {
+    const create = async (body: Record<string, unknown>) =>
+      (await ctx.post('/students').send(body).expect(201)).body as { id: string };
+
+    it('retire un étudiant avec ses invitations et contraintes', async () => {
+      const a = await create({ firstName: 'A', lastName: 'A', email: 'a@sji.cm', level: 'ING4', maxMentees: 1 });
+      const b = await create({ firstName: 'B', lastName: 'B', email: 'b@sji.cm', level: 'ING3' });
+      await ctx.post('/pairing-constraints').send({ sponsorId: a.id, menteeId: b.id, type: 'FORBIDDEN' }).expect(201);
+      await ctx.post(`/students/${b.id}/invitations`).expect(201);
+
+      const { body } = await ctx.delete(`/students/${b.id}`).expect(200);
+      expect(body).toEqual({ deleted: true, resetSessions: 0 });
+      await ctx.get(`/students/${b.id}`).expect(404);
+      expect((await ctx.get('/pairing-constraints').expect(200)).body).toHaveLength(0);
+      expect((await ctx.get('/invitations/overview').expect(200)).body.students).toHaveLength(1);
+    });
+
+    it('annule un tirage non finalisé et refuse si la session est finalisée', async () => {
+      const a = await create({ firstName: 'A', lastName: 'A', email: 'a@sji.cm', level: 'ING4', maxMentees: 2 });
+      const b = await create({ firstName: 'B', lastName: 'B', email: 'b@sji.cm', level: 'ING3' });
+      const c = await create({ firstName: 'C', lastName: 'C', email: 'c@sji.cm', level: 'ING3' });
+      const { body: session } = await ctx.post('/pairing-sessions').send({}).expect(201);
+      await ctx.post(`/pairing-sessions/${session.id}/generate`).expect(201);
+
+      const { body } = await ctx.delete(`/students/${c.id}`).expect(200);
+      expect(body.resetSessions).toBe(1);
+      const { body: view } = await ctx.get(`/pairing-sessions/${session.id}`).expect(200);
+      expect(view).toMatchObject({ status: 'DRAFT', pairings: [] });
+
+      await ctx.post(`/pairing-sessions/${session.id}/generate`).expect(201);
+      await ctx.post(`/pairing-sessions/${session.id}/finalize`).expect(201);
+      await ctx.delete(`/students/${b.id}`).expect(409);
+      await ctx.delete(`/students/${a.id}`).expect(409);
+    });
+
+    it('retourne 404 pour un étudiant inexistant', async () => {
+      await ctx.delete('/students/00000000-0000-4000-8000-000000000000').expect(404);
+    });
+  });
 });

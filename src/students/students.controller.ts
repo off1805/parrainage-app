@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   ParseUUIDPipe,
@@ -30,6 +31,12 @@ export class StudentsController {
   @Get(':id')
   findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.studentsService.findOneOrFail(id);
+  }
+
+  /** Retire un étudiant ; annule les tirages non finalisés qui l'incluent. */
+  @Delete(':id')
+  remove(@Param('id', ParseUUIDPipe) id: string) {
+    return this.studentsService.remove(id);
   }
 
   @Patch(':id')

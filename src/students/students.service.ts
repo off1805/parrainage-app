@@ -5,9 +5,12 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { ILike, Repository } from 'typeorm';
+import { ILike, In, Repository } from 'typeorm';
 import type { EntityManager } from 'typeorm';
 import { PairingConstraint } from '../pairings/pairing-constraint.entity.js';
+import { Pairing } from '../pairings/pairing.entity.js';
+import { PairingSession, PairingSessionStatus } from '../pairings/pairing-session.entity.js';
+import { ProfileInvitation } from '../invitations/invitation.entity.js';
 import { Student, StudentLevel, StudentSection } from './student.entity.js';
 import { QueryStudentsDto } from './dto/query-students.dto.js';
 import { UpdateStudentDto } from './dto/update-student.dto.js';
@@ -77,6 +80,47 @@ export class StudentsService {
       },
     ]);
     return student!;
+  }
+
+  /**
+   * Retire un étudiant et tout ce qui le concerne (invitations, contraintes).
+   * - Refusé s'il fait partie d'une session finalisée (résultat officiel).
+   * - Les tirages non finalisés qui l'incluent sont annulés : la session repasse
+   *   en brouillon pour être relancée sans lui.
+   */
+  async remove(id: string): Promise<{ deleted: true; resetSessions: number }> {
+    await this.findOneOrFail(id);
+
+    return this.students.manager.transaction(async (manager) => {
+      const pairings = await manager.find(Pairing, {
+        where: [{ sponsorId: id }, { menteeId: id }],
+      });
+      const sessionIds = [...new Set(pairings.map((p) => p.sessionId))];
+      const sessions = sessionIds.length
+        ? await manager.find(PairingSession, { where: { id: In(sessionIds) } })
+        : [];
+
+      if (sessions.some((s) => s.status === PairingSessionStatus.FINALIZED)) {
+        throw new ConflictException(
+          'Cet étudiant fait partie d\'une session finalisée : il ne peut pas être retiré',
+        );
+      }
+
+      if (sessionIds.length) {
+        await manager.delete(Pairing, { sessionId: In(sessionIds) });
+        await manager.update(
+          PairingSession,
+          { id: In(sessionIds) },
+          { status: PairingSessionStatus.DRAFT, generatedAt: null },
+        );
+      }
+      await manager.delete(PairingConstraint, { sponsorId: id });
+      await manager.delete(PairingConstraint, { menteeId: id });
+      await manager.delete(ProfileInvitation, { studentId: id });
+      await manager.delete(Student, { id });
+
+      return { deleted: true as const, resetSessions: sessionIds.length };
+    });
   }
 
   async update(id: string, dto: UpdateStudentDto): Promise<Student> {
