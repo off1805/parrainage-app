@@ -72,4 +72,15 @@ describe('Sections francophone / anglophone (e2e)', () => {
     const section = (email: string) => students.find((s: { email: string }) => s.email === email).section;
     expect([section('tom@sji.cm'), section('lea@sji.cm'), section('zoe@sji.cm')]).toEqual(['EN', 'EN', 'FR']);
   });
+
+  it('supprime une session et ses binômes sans toucher aux étudiants', async () => {
+    const { body: session } = await ctx.post('/pairing-sessions').send({}).expect(201);
+    await ctx.post(`/pairing-sessions/${session.id}/generate`).expect(201);
+    await ctx.post(`/pairing-sessions/${session.id}/finalize`).expect(201);
+
+    await ctx.delete(`/pairing-sessions/${session.id}`).expect(204);
+    await ctx.get(`/pairing-sessions/${session.id}`).expect(404);
+    await ctx.delete(`/pairing-sessions/${session.id}`).expect(404);
+    expect((await ctx.get('/students').expect(200)).body).toHaveLength(5);
+  });
 });

@@ -70,6 +70,13 @@ export class PairingsController {
     return this.pairingsService.regenerate(id);
   }
 
+  /** Supprime la session et ses binômes (étudiants et contraintes conservés). */
+  @Delete('pairing-sessions/:id')
+  @HttpCode(204)
+  async deleteSession(@Param('id', ParseUUIDPipe) id: string) {
+    await this.pairingsService.deleteSession(id);
+  }
+
   @Post('pairing-sessions/:id/finalize')
   finalize(@Param('id', ParseUUIDPipe) id: string) {
     return this.pairingsService.finalize(id);

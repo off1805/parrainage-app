@@ -165,6 +165,19 @@ export class PairingsService {
     return this.runGeneration(session);
   }
 
+  /**
+   * Supprime une session et ses binômes. Les étudiants et les contraintes ne
+   * sont pas touchés : on peut recréer une session et relancer un tirage.
+   */
+  async deleteSession(sessionId: string): Promise<void> {
+    const session = await this.findSessionOrFail(sessionId);
+    await this.dataSource.transaction(async (manager) => {
+      await manager.delete(Pairing, { sessionId });
+      await manager.delete(PairingSession, { id: sessionId });
+    });
+    this.logger.log(`Session ${sessionId} (${session.status}, ${session.section}) supprimée`);
+  }
+
   async finalize(sessionId: string): Promise<PairingSessionViewDto> {
     const session = await this.findSessionOrFail(sessionId);
     if (session.status === PairingSessionStatus.FINALIZED) {
